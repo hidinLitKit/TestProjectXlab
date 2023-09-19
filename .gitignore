@@ -3,4 +3,4 @@ Library
 Logs
 UserSettings
 *.vsconfig
-*.slh
+*.sln
