@@ -31,11 +31,13 @@ public class TestScript : MonoBehaviour
         object[] objArray = new object[10000]; // в стеке большой кусок пам€ти, все данные в куче
 
         List<int> listInt = new List<int>(); //изначально 4, при расширении ищет более объЄмную(2^n) €чейку пам€ти. capacity задает €чейку пам€ти по умолчанию (сокращает аллокацию)
-        MyListTest();
+        //MyListTest();
+
+        runTest();
     }
     public void MyListTest()
     {
-        MyList myList = new MyList();
+        MyList<int> myList = new MyList<int>();
         myList.Add(1);
         myList.Add(5);
         myList.Insert(1, 3);
@@ -47,6 +49,37 @@ public class TestScript : MonoBehaviour
         {
             Debug.Log(myList[i]);
         }
+    }
+    public void runTest()
+    {
+        MyList<MyClass> myList = new MyList<MyClass>();
+        List<MyClass> standList = new List<MyClass>();
+        System.Diagnostics.Stopwatch sw;
+
+        sw = System.Diagnostics.Stopwatch.StartNew();
+        for(int i = 0; i <1000000;i++)
+        {
+            myList.Add(new MyClass());
+        }
+        myList.Insert(500999, new MyClass());
+        myList.RemoveAt(690345);
+        Debug.Log($"Time elapsed for MyList: {sw.ElapsedMilliseconds}");
+        sw.Stop();
+
+        sw = System.Diagnostics.Stopwatch.StartNew();
+        for (int i = 0; i < 1000000; i++)
+        {
+            standList.Add(new MyClass());
+        }
+        standList.Insert(500999, new MyClass());
+        standList.RemoveAt(690345);
+        Debug.Log($"Time elapsed for Standart List: {sw.ElapsedMilliseconds}");
+        sw.Stop();
+
+        //MyList быстрее потому что в методах меньше проверок, чем в стандартном List
+
+
+
     }
     public void TestFunc(ref int d)
     {
@@ -66,12 +99,12 @@ public class TestScript : MonoBehaviour
 
 }
 
-public class MyList
+public class MyList<T>
 {
     private readonly int _defaultCapacity = 4;
-    private readonly int[] _emptyArray = new int[0];
+    private readonly T[] _emptyArray = new T[0];
     private int _arrSize = 0;
-    private int[] m_array;
+    private T[] m_array;
 
     public int Count
     {
@@ -88,9 +121,7 @@ public class MyList
         {
             if(value > m_array.Length)
             {
-                int[] newArray = new int[value];
-                Array.Copy(m_array, newArray, _arrSize);
-                m_array = newArray;
+                System.Array.Resize(ref m_array, value);
             }
         }
     }
@@ -101,44 +132,54 @@ public class MyList
     }
     public MyList(int capacity)
     {
-        m_array = new int[Capacity];
+        m_array = new T[Capacity];
     }
-    public int this[int index]
+    public T this[int index]
     {
         get { return m_array[index]; }
         set { m_array[index] = value; }
+    }
+    public void Add(T item)
+    {
+        if (Count == Capacity) IncreaseCapacity();
+        this[Count] = item;
+        Count++;
     }
     private void IncreaseCapacity()
     {
         int newCapacity = m_array.Length == 0 ? _defaultCapacity : Capacity * 2;
         Capacity = newCapacity;
     }
-    public void Add(int item)
+    
+    private bool CheckIndexRange(int index)
     {
-        if(Count == Capacity) IncreaseCapacity();
-        this[Count] = item;
-        Count++;
+        if (index < 0 || index >= Count)
+            throw new ArgumentOutOfRangeException();
+
+        return true;
     }
-    public void Insert(int index, int item)
+    public void Insert(int index, T item)
     {
+        CheckIndexRange(index);
         if (Count == Capacity) IncreaseCapacity();
         if(index < Count)
         {
             Array.Copy(m_array, index, m_array, index+1, Count-index);
         }
-        this[index] = item;
         Count++;
+        this[index] = item;
+        
     }
-    public int IndexOf(int item)
+    public int IndexOf(T item) 
     {
         for(int i=0; i<Count; i++)
         {
-            if(m_array[i] == item) return i;
+            if( this.Equals(item)) return i;
         }
         return -1;
     }
 
-    public bool Remove(int item)
+    public bool Remove(T item)
     {
         int index = IndexOf(item);
         if(index>=0)
@@ -151,6 +192,7 @@ public class MyList
     }
     public void RemoveAt(int index)
     {
+        CheckIndexRange(index);
         Count--;
         if(index<Count)
         {
@@ -159,7 +201,7 @@ public class MyList
         
     }
 
-    public bool Contains(int item)
+    public bool Contains(T item)
     {
         return IndexOf(item) >= 0;
     }
